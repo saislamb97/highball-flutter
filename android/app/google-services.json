@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "422894440086",
+    "project_id": "highball-109e9",
+    "storage_bucket": "highball-109e9.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:422894440086:android:f19a99a95216f8f4d3bcb7",
+        "android_client_info": {
+          "package_name": "com.example.highball"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3k3IyUFSqc4JP9wyf68lcLiEB9WmlXRE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

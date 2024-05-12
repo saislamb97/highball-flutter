@@ -1,0 +1,40 @@
+name: highball
+description: "A new Flutter project."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.4 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.6
+  flutter_svg: ^2.0.10+1
+  dio: ^5.4.3+1
+  provider: ^6.0.3
+  firebase_core: ^2.31.0
+  firebase_auth: ^4.17.7
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/food1.jpg
+    - assets/images/food2.jpg
+    - assets/images/food3.jpg
+    - assets/images/food4.jpg
+
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: fonts/Poppins-Regular.ttf
+
+    - family: GeometrySoftPro
+      fonts:
+        - asset: fonts/GeometrySoftPro-BoldA.ttf
