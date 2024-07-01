@@ -1,0 +1,196 @@
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:highball/widgets/background_image_wrapper.dart';
+
+class CakePostPage extends StatefulWidget {
+  final QueryDocumentSnapshot cake;
+
+  const CakePostPage({Key? key, required this.cake}) : super(key: key);
+
+  @override
+  _CakePostPageState createState() => _CakePostPageState();
+}
+
+class _CakePostPageState extends State<CakePostPage> {
+  bool isLiked = false;
+  int likeCount = 0;
+  final TextEditingController commentController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchLikeStatus();
+  }
+
+  void fetchLikeStatus() async {
+    final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+    final userDoc = FirebaseFirestore.instance.collection('user_profiles').doc(currentUserEmail);
+    final docSnapshot = await userDoc.get();
+    if (docSnapshot.exists) {
+      final List<dynamic>? likes = docSnapshot.data()?['likes'];
+      if (likes != null && likes.contains(widget.cake.id)) {
+        setState(() {
+          isLiked = true;
+        });
+      }
+    }
+
+    setState(() {
+      likeCount = widget.cake['likes'] ?? 0;
+    });
+  }
+
+  void toggleLike() async {
+    final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+    final userDoc = FirebaseFirestore.instance.collection('user_profiles').doc(currentUserEmail);
+    final docSnapshot = await userDoc.get();
+    if (docSnapshot.exists) {
+      final List<dynamic>? likes = docSnapshot.data()?['likes'];
+      final List<String> updatedLikes = likes != null ? List.from(likes) : [];
+      if (updatedLikes.contains(widget.cake.id)) {
+        updatedLikes.remove(widget.cake.id);
+        setState(() {
+          likeCount--;
+          isLiked = false;
+        });
+      } else {
+        updatedLikes.add(widget.cake.id);
+        setState(() {
+          likeCount++;
+          isLiked = true;
+        });
+      }
+      await userDoc.update({'likes': updatedLikes});
+      await FirebaseFirestore.instance.collection('cakes').doc(widget.cake.id).update({'likes': likeCount});
+    }
+  }
+
+  void addComment(String comment) async {
+    final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+    final commentData = {
+      'text': comment,
+      'userEmail': currentUserEmail,
+      'timestamp': Timestamp.now(),
+    };
+    await FirebaseFirestore.instance.collection('cakes').doc(widget.cake.id).collection('comments').add(commentData);
+    commentController.clear();
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BackgroundImageWrapper(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          iconTheme: IconThemeData(color: Colors.white),
+          title: Text('Cake Post'),
+        ),
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: 300,
+                      decoration: BoxDecoration(
+                        image: DecorationImage(
+                          image: NetworkImage(widget.cake['imageUrl'] ?? ''),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: Icon(
+                                  isLiked ? Icons.favorite : Icons.favorite_border,
+                                  color: Colors.red,
+                                ),
+                                onPressed: toggleLike,
+                              ),
+                              Text('$likeCount likes'),
+                            ],
+                          ),
+                          SizedBox(height: 10),
+                          Text(widget.cake['name'], style: TextStyle(fontSize: 24, color: Colors.white)),
+                          SizedBox(height: 10),
+                          Text(widget.cake['description'], style: TextStyle(fontSize: 16, color: Colors.white)),
+                          SizedBox(height: 20),
+                          Text('Comments', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                          StreamBuilder<QuerySnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('cakes')
+                                .doc(widget.cake.id)
+                                .collection('comments')
+                                .orderBy('timestamp', descending: true)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return Center(child: CircularProgressIndicator());
+                              }
+
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: NeverScrollableScrollPhysics(),
+                                itemCount: snapshot.data!.docs.length,
+                                itemBuilder: (context, index) {
+                                  var comment = snapshot.data!.docs[index];
+                                  return ListTile(
+                                    title: Text(comment['text'], style: TextStyle(color: Colors.white)),
+                                    subtitle: Text(comment['userEmail'], style: TextStyle(color: Colors.grey)),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: commentController,
+                      decoration: InputDecoration(
+                        hintText: 'Add a comment...',
+                        hintStyle: TextStyle(color: Colors.grey),
+                        border: InputBorder.none,
+                        filled: true,
+                        fillColor: Colors.white24,
+                      ),
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.send, color: Colors.red),
+                    onPressed: () {
+                      if (commentController.text.isNotEmpty) {
+                        addComment(commentController.text);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
